@@ -1,34 +1,42 @@
+from flask import Flask, send_file
+import os
+import threading
+import time
 import requests
+import prem
 
-def send_group_message():
-    try:
-        # Token.txt से टोकन पढ़ें
-        with open("Token.txt", "r") as token_file:
-            access_token = token_file.read().strip()
-        
-        # Fil.txt से ग्रुप आईडी पढ़ें
-        with open("Fil.txt", "r") as file:
-            group_id = file.read().strip()
-        
-        # CONVO.txt से संदेश पढ़ें
-        with open("CONVO.txt", "r") as convo_file:
-            message = convo_file.read().strip()
-        
-        # Facebook Graph API URL
-        url = f"https://graph.facebook.com/{group_id}/feed"
-        params = {
-            "message": message,
-            "access_token": access_token
-        }
-        
-        # POST Request भेजें
-        response = requests.post(url, data=params)
-        
-        # Response प्रिंट करें
-        print(response.json())
-    
-    except Exception as e:
-        print(f"Error: {e}")
+app = Flask(__name__)
 
+@app.route('/')
+def index():
+    return send_file(os.path.join(os.path.dirname(__file__), "public", "index.html"))
+
+
+app.run(host='0.0.0.0', port=81)
+
+
+# Serve static files from the "public" directory
+app.static_folder = 'public'
+
+# Start the Flask server
 if __name__ == "__main__":
-    send_group_message()
+    port = int(os.environ.get("PORT", 3000))
+    app.run(port=port, debug=True)
+
+# Function to ping the server
+def ping_server():
+    sleep_time = 10 * 60  # 10 minutes
+    while True:
+        time.sleep(sleep_time)
+        try:
+            response = requests.get('past_webserver.url', timeout=10)
+            print(f"Pinged server with response: {response.status_code}")
+        except requests.RequestException as e:
+            if isinstance(e, requests.Timeout):
+                print("Couldn't connect to the site URL..!")
+            else:
+                print(e)
+
+# Start the ping function in a separate thread
+ping_thread = threading.Thread(target=ping_server)
+ping_thread.start()
